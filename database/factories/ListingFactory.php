@@ -14,27 +14,16 @@ class ListingFactory extends Factory
      *
      * @return array<string, mixed>
      */
-    public function definition(): array
+    public function definition()
     {
         return [
-            'title' => fake()->sentence(),
-            'description' => fake()->paragraph(7),
+            'title' => $this->faker->sentence(),
             'tags' => 'laravel, api, backend',
-            'company' => fake()->company(),
-            'location' => fake()->city(),
-            'email' => fake()->companyEmail(),
-            'website' => fake()->url(),
-            'user_id' => fake()->numberBetween(1, 30)
+            'company' => $this->faker->company(),
+            'email' => $this->faker->companyEmail(),
+            'website' => $this->faker->url(),
+            'location' => $this->faker->city(),
+            'description' => $this->faker->paragraph(5),
         ];
-
-        // return [
-        //     'title' => fake()->sentence(),
-        //     'description' => fake()->paragraph(7),
-        //     'tags' => 'laravel, api, backend',
-        //     'company' => fake()->company(),
-        //     'location' => fake()->city(),
-        //     'email' => fake()->companyEmail(),
-        //     'website' => fake()->url()
-        // ];
     }
 }

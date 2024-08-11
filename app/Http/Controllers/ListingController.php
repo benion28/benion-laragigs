@@ -9,50 +9,25 @@ use Illuminate\Validation\Rule;
 class ListingController extends Controller
 {
     // Show all listings
-    // public function index() {
-    //         return view('listings.index', [
-    //         'listings' => Listing::all()
-    //     ]);
-    // }
-
-    // Show all listings
-    //  public function index() {
-    //         return view('listings.index', [
-    //         'listings' => Listing::latest()->filter(request(['tag']))->get()
-    //     ]);
-    // }
-
-    // Show all listings
-    // public function index() {
-    //         return view('listings.index', [
-    //         'listings' => Listing::latest()->filter(request(['tag', 'search']))->get()
-    //     ]);
-    // }
-
-    // Show all listings 
-    # paginate() -> gets all listing and paginate(2) -> gets only 2 listing
     public function index() {
-            return view('listings.index', [
-            'listings' => Listing::latest()->filter(request(['tag', 'search']))->paginate()
+        return view('listings.index', [
+            'listings' => Listing::latest()->filter(request(['tag', 'search']))->paginate(6)
         ]);
-        // return view('listings.index', [
-        //     'listings' => Listing::latest()->filter(request(['tag', 'search']))->simplePaginate()
-        // ]);
     }
 
-    // Show single listing
+    //Show single listing
     public function show(Listing $listing) {
-            return view('listings.show', [
+        return view('listings.show', [
             'listing' => $listing
         ]);
     }
 
-    // Show listing form
+    // Show Create Form
     public function create() {
         return view('listings.create');
     }
 
-    // Store listing data
+    // Store Listing Data
     public function store(Request $request) {
         $formFields = $request->validate([
             'title' => 'required',
@@ -64,7 +39,7 @@ class ListingController extends Controller
             'description' => 'required'
         ]);
 
-        if ($request->hasFile('logo')) {
+        if($request->hasFile('logo')) {
             $formFields['logo'] = $request->file('logo')->store('logos', 'public');
         }
 
@@ -72,14 +47,24 @@ class ListingController extends Controller
 
         Listing::create($formFields);
 
-        return redirect('/')->with('message', 'Listing created successfully');
+        return redirect('/')->with('message', 'Listing created successfully!');
     }
 
-    // Update listing data
+    // Show Edit Form
+    public function edit(Listing $listing) {
+        return view('listings.edit', ['listing' => $listing]);
+    }
+
+    // Update Listing Data
     public function update(Request $request, Listing $listing) {
+        // Make sure logged in user is owner
+        if($listing->user_id != auth()->id()) {
+            abort(403, 'Unauthorized Action');
+        }
+        
         $formFields = $request->validate([
             'title' => 'required',
-            'company' => 'required',
+            'company' => ['required'],
             'location' => 'required',
             'website' => 'required',
             'email' => ['required', 'email'],
@@ -87,77 +72,31 @@ class ListingController extends Controller
             'description' => 'required'
         ]);
 
-        if ($request->hasFile('logo')) {
+        if($request->hasFile('logo')) {
             $formFields['logo'] = $request->file('logo')->store('logos', 'public');
         }
 
         $listing->update($formFields);
 
-        return back()->with('message', 'Listing updated successfully');
+        return back()->with('message', 'Listing updated successfully!');
     }
 
-    // Submit listing data
-    public function submitListing(Request $request, Listing $listing) {
-
-        // Make sure loggged in user is owner when updating
-        if ($listing->id && $listing->user_id != auth()->id()) {
-            abort(403, 'Authorized Action');
-        }
-
-
-        $formFields = $request->validate([
-            'title' => 'required',
-            'company' => $listing->id ? 'required' : ['required', Rule::unique('listings', 'company')],
-            'location' => 'required',
-            'website' => 'required',
-            'email' => ['required', 'email'],
-            'tags' => 'required',
-            'description' => 'required'
-        ]);
-
-        if ($request->hasFile('logo')) {
-            $formFields['logo'] = $request->file('logo')->store('logos', 'public');
-        }
-
-        if (!($listing->id)) {
-            $formFields['user_id'] = auth()->id();
-        }
-
-        $listing->id ? $listing->update($formFields) : Listing::create($formFields);
-
-        return $listing->id ? back()->with('message', 'Listing updated successfully') : redirect('/')->with('message', 'Listing created successfully');
-    }
-
-    // Show edit listing form
-    public function edit(Listing $listing) {
-        return view('listings.edit', [
-            'listing' => $listing
-        ]);
-    }
-
-    // Show listing form
-    public function listingForm(Listing $listing) {
-        return view('listings.listing-form', [
-            'listing' => $listing
-        ]);
-    }
-
-    // Delete listing
+    // Delete Listing
     public function destroy(Listing $listing) {
-
-        // Make sure loggged in user is owner when deleting
-        if ($listing->user_id != auth()->id()) {
-            abort(403, 'Authorized Action');
+        // Make sure logged in user is owner
+        if($listing->user_id != auth()->id()) {
+            abort(403, 'Unauthorized Action');
         }
         
+        if($listing->logo && Storage::disk('public')->exists($listing->logo)) {
+            Storage::disk('public')->delete($listing->logo);
+        }
         $listing->delete();
         return redirect('/')->with('message', 'Listing deleted successfully');
     }
 
-     // Show all listings 
-     public function manage() {
-        return view('listings.manage', [
-            'listings' => auth()->user()->listings()->get()
-        ]);
+    // Manage Listings
+    public function manage() {
+        return view('listings.manage', ['listings' => auth()->user()->listings()->get()]);
     }
 }

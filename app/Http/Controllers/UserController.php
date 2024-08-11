@@ -8,39 +8,40 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    // Show Register Form
+    // Show Register/Create Form
     public function create() {
         return view('users.register');
     }
 
-    // Store User
+    // Create New User
     public function store(Request $request) {
         $formFields = $request->validate([
             'name' => ['required', 'min:3'],
             'email' => ['required', 'email', Rule::unique('users', 'email')],
-            'password' => ['required', 'confirmed', 'min:6']
+            'password' => 'required|confirmed|min:6'
         ]);
 
+        // Hash Password
         $formFields['password'] = bcrypt($formFields['password']);
-        $formFields['email_verified_at'] = now();
 
         // Create User
         $user = User::create($formFields);
 
-        //Login
+        // Login
         auth()->login($user);
 
         return redirect('/')->with('message', 'User created and logged in');
     }
 
-    // User Logout
+    // Logout User
     public function logout(Request $request) {
         auth()->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/')->with('message', 'You have been logged out');
+        return redirect('/')->with('message', 'You have been logged out!');
+
     }
 
     // Show Login Form
@@ -55,11 +56,10 @@ class UserController extends Controller
             'password' => 'required'
         ]);
 
-        // Attempt User Login
-        if (auth()->attempt($formFields)) {
-            $request->session()->regenerateToken();
+        if(auth()->attempt($formFields)) {
+            $request->session()->regenerate();
 
-            return redirect('/')->with('message', 'You are now logged in');
+            return redirect('/')->with('message', 'You are now logged in!');
         }
 
         return back()->withErrors(['email' => 'Invalid Credentials'])->onlyInput('email');
